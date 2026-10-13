@@ -1,0 +1,53 @@
+<div class="page-wrapper">
+  <div class="card">
+    <header class="header">
+      <div class="badge">Azure Starter App</div>
+      <h1>Task Manager</h1>
+      <p class="subtitle">.NET 8 Web API + MySQL + Angular 19</p>
+    </header>
+
+    <div *ngIf="errorMessage" class="error-banner">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Add Task Form -->
+    <form (ngSubmit)="addTask()" class="task-form">
+      <input
+        type="text"
+        placeholder="Enter a new task title..."
+        [(ngModel)]="newTaskTitle"
+        name="title"
+        required
+      />
+      <button type="submit" [disabled]="!newTaskTitle.trim()">
+        <span>+ Add</span>
+      </button>
+    </form>
+
+    <!-- Task List -->
+    <div *ngIf="isLoading" class="loading">Loading tasks...</div>
+
+    <ul *ngIf="!isLoading" class="task-list">
+      <li *ngFor="let task of tasks" [class.completed]="task.isCompleted">
+        <label class="task-info">
+          <input
+            type="checkbox"
+            [(ngModel)]="task.isCompleted"
+            (change)="toggleTask(task)"
+          />
+          <span class="task-title">{{ task.title }}</span>
+        </label>
+        <button class="delete-btn" (click)="deleteTask(task.id)" title="Delete Task">
+          Delete
+        </button>
+      </li>
+      <li *ngIf="tasks.length === 0" class="empty-state">
+        No tasks found. Add a task above to test MySQL storage!
+      </li>
+    </ul>
+
+    <footer class="footer">
+      <span>API Endpoint: <code>http://localhost:5000/api/tasks</code></span>
+    </footer>
+  </div>
+</div>
