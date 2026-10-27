@@ -18,3 +18,5 @@ yarn-error.log*
 .idea/
 *.DS_Store
 Thumbs.db
+/backend/TaskManager.Api.http
+/backend/.vs/TaskManagerApp.slnx/FileContentIndex/a76abc6f-a9a1-44d6-a624-1a07686fb5b9.vsidx
