@@ -3,17 +3,10 @@ using TaskManager.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Database Configuration (conditional)
-var enableDatabase = builder.Configuration.GetValue<bool>("EnableDatabase");
-if (enableDatabase)
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-    }
-}
+// 1. MySQL Database Configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // 2. CORS Configuration for Angular frontend
 builder.Services.AddCors(options =>
