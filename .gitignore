@@ -3,7 +3,14 @@ bin/
 obj/
 *.user
 *.suo
+*.pubxml.user
 appsettings.Development.local.json
+
+# Visual Studio & VS Code Caches
+.vs/
+**/.vs/
+.vscode/
+.idea/
 
 # Node & Angular
 node_modules/
@@ -13,11 +20,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS / Editors
-.vscode/
-.idea/
+# OS / System
 *.DS_Store
 Thumbs.db
+
+# Optional / Local Docs
 /backend/TaskManager.Api.http
-/backend/.vs/TaskManagerApp.slnx/FileContentIndex/a76abc6f-a9a1-44d6-a624-1a07686fb5b9.vsidx
-/backend/.vs/TaskManagerApp.slnx
+/ANGULAR_FRONTEND_INFO.txt
+/TaskManager_Tasks_API.postman_collection.json
+/README.md
+/README.md

@@ -1,53 +1,409 @@
-<div class="page-wrapper">
-  <div class="card">
-    <header class="header">
-      <div class="badge">Azure Starter App</div>
-      <h1>Task Manager</h1>
-      <p class="subtitle">.NET 8 Web API + MySQL + Angular 19</p>
+<div class="app-layout">
+  <!-- Sidebar Navigation Component -->
+  <app-sidebar
+    [activeView]="activeView()"
+    [activeCategory]="activeCategory()"
+    [summary]="summary()"
+    [categoryCounts]="categoryCounts()"
+    [currentApiUrl]="currentApiUrl()"
+    [isMobileOpen]="isMobileSidebarOpen()"
+    (viewChange)="activeView.set($event)"
+    (categoryChange)="activeCategory.set($event)"
+    (createTask)="openCreateModal()"
+    (openEndpointModal)="isEndpointModalOpen.set(true)"
+    (closeMobile)="isMobileSidebarOpen.set(false)"
+  ></app-sidebar>
+
+  <!-- Main Content Area -->
+  <main class="main-wrapper">
+    <!-- Top Header Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <button 
+          class="mobile-menu-toggle" 
+          (click)="isMobileSidebarOpen.set(true)" 
+          aria-label="Open mobile navigation"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        <div class="header-title-group">
+          <h1>{{ getViewTitle() }}</h1>
+          <p class="header-subtitle">{{ getViewSubtitle() }}</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Live Connection Pill -->
+        <button 
+          class="connection-pill" 
+          (click)="isEndpointModalOpen.set(true)" 
+          title="Click to view or change API endpoint"
+        >
+          <span class="pulse-dot" [class.live]="currentApiUrl().includes('azurewebsites.net')"></span>
+          <span class="pill-text">
+            {{ currentApiUrl().includes('azurewebsites.net') ? 'Azure Cloud' : 'Localhost API' }}
+          </span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button 
+          class="icon-btn" 
+          (click)="toggleTheme()" 
+          [title]="isDarkMode() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+          aria-label="Toggle theme"
+        >
+          <!-- Sun icon for light mode switch -->
+          <svg *ngIf="isDarkMode()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+          </svg>
+          <!-- Moon icon for dark mode switch -->
+          <svg *ngIf="!isDarkMode()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+
+        <!-- Refresh Button -->
+        <button 
+          class="icon-btn" 
+          (click)="loadTasks()" 
+          title="Refresh task list" 
+          aria-label="Refresh tasks"
+          [disabled]="isLoading()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" [class.spinning]="isLoading()">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+
+        <!-- Primary Add Task Button -->
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          <span class="btn-text">Add Task</span>
+        </button>
+      </div>
     </header>
 
-    <div *ngIf="errorMessage" class="error-banner">
-      {{ errorMessage }}
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage()" class="alert-banner">
+      <div class="alert-content">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      <button class="btn-retry" (click)="loadTasks()">Retry</button>
     </div>
 
-    <!-- Add Task Form -->
-    <form (ngSubmit)="addTask()" class="task-form">
-      <input
-        type="text"
-        placeholder="Enter a new task title..."
-        [(ngModel)]="newTaskTitle"
-        name="title"
-        required
-      />
-      <button type="submit" [disabled]="!newTaskTitle.trim()">
-        <span>+ Add</span>
-      </button>
-    </form>
+    <!-- Content Views Container -->
+    <div class="view-content">
+      <!-- 1. DASHBOARD VIEW -->
+      <app-dashboard
+        *ngIf="activeView() === 'dashboard'"
+        [summary]="summary()"
+        [priorityCounts]="priorityCounts()"
+        [categoryCounts]="categoryCounts()"
+        [urgentTasks]="urgentTasks()"
+        (createTask)="openCreateModal()"
+        (viewAll)="activeView.set('all')"
+        (toggleTask)="toggleTaskCompletion($event)"
+      ></app-dashboard>
 
-    <!-- Task List -->
-    <div *ngIf="isLoading" class="loading">Loading tasks...</div>
+      <!-- 2. TASK LIST VIEWS (All, My Day, Upcoming, Completed, Categories) -->
+      <div *ngIf="activeView() !== 'dashboard'" class="task-list-container">
+        <!-- Search, Filtering, and Sorting Toolbar -->
+        <div class="toolbar">
+          <div class="toolbar-search">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by title or description..."
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              class="search-input"
+            />
+            <button 
+              *ngIf="searchQuery()" 
+              class="clear-search-btn" 
+              (click)="searchQuery.set('')"
+              aria-label="Clear search"
+            >
+              &times;
+            </button>
+          </div>
 
-    <ul *ngIf="!isLoading" class="task-list">
-      <li *ngFor="let task of tasks" [class.completed]="task.isCompleted">
-        <label class="task-info">
-          <input
-            type="checkbox"
-            [(ngModel)]="task.isCompleted"
-            (change)="toggleTask(task)"
-          />
-          <span class="task-title">{{ task.title }}</span>
-        </label>
-        <button class="delete-btn" (click)="deleteTask(task.id)" title="Delete Task">
-          Delete
-        </button>
-      </li>
-      <li *ngIf="tasks.length === 0" class="empty-state">
-        No tasks found. Add a task above to test MySQL storage!
-      </li>
-    </ul>
+          <div class="toolbar-filters">
+            <!-- Status Pill Filter -->
+            <div class="filter-pills">
+              <button 
+                class="pill" 
+                [class.active]="statusFilter() === 'all'" 
+                (click)="statusFilter.set('all')"
+              >
+                All
+              </button>
+              <button 
+                class="pill" 
+                [class.active]="statusFilter() === 'pending'" 
+                (click)="statusFilter.set('pending')"
+              >
+                Pending
+              </button>
+              <button 
+                class="pill" 
+                [class.active]="statusFilter() === 'completed'" 
+                (click)="statusFilter.set('completed')"
+              >
+                Completed
+              </button>
+              <button 
+                class="pill overdue-pill" 
+                [class.active]="statusFilter() === 'overdue'" 
+                (click)="statusFilter.set('overdue')"
+              >
+                Overdue
+              </button>
+            </div>
 
-    <footer class="footer">
-      <span>API Endpoint: <code>http://localhost:5000/api/tasks</code></span>
-    </footer>
-  </div>
+            <!-- Priority Dropdown -->
+            <select 
+              [ngModel]="priorityFilter()" 
+              (ngModelChange)="priorityFilter.set($event)" 
+              class="toolbar-select"
+              aria-label="Filter by priority"
+            >
+              <option value="all">All Priorities</option>
+              <option value="High">🔴 High Priority</option>
+              <option value="Medium">🟡 Medium Priority</option>
+              <option value="Low">🟢 Low Priority</option>
+            </select>
+
+            <!-- Category Dropdown (if on All view) -->
+            <select 
+              *ngIf="activeView() === 'all'"
+              [ngModel]="categoryFilter()" 
+              (ngModelChange)="categoryFilter.set($event)" 
+              class="toolbar-select"
+              aria-label="Filter by category"
+            >
+              <option value="all">All Categories</option>
+              <option value="Work">💼 Work</option>
+              <option value="Personal">🏠 Personal</option>
+              <option value="Learning">📚 Learning</option>
+              <option value="Other">📁 Other</option>
+            </select>
+
+            <!-- Sort Dropdown -->
+            <select 
+              [ngModel]="sortBy()" 
+              (ngModelChange)="sortBy.set($event)" 
+              class="toolbar-select"
+              aria-label="Sort tasks"
+            >
+              <option value="dueDateAsc">Due Date: Earliest First</option>
+              <option value="dueDateDesc">Due Date: Latest First</option>
+              <option value="priorityDesc">Priority: High to Low</option>
+              <option value="createdDesc">Created: Newest First</option>
+              <option value="titleAsc">Title: Alphabetical (A-Z)</option>
+            </select>
+
+            <!-- Clear Filters Button -->
+            <button 
+              *ngIf="hasActiveFilters()" 
+              class="btn-clear-filters" 
+              (click)="clearFilters()"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Result Count / Active Filters Bar -->
+        <div class="result-bar">
+          <span class="count-text">
+            Showing <strong>{{ filteredTasks().length }}</strong> of <strong>{{ tasks().length }}</strong> tasks
+          </span>
+          <span *ngIf="hasActiveFilters()" class="filtered-badge">
+            Filters Active
+          </span>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div *ngIf="isLoading()" class="skeleton-list">
+          <div class="skeleton-card" *ngFor="let i of [1,2,3,4]">
+            <div class="skeleton-box checkbox-shimmer"></div>
+            <div class="skeleton-lines">
+              <div class="skeleton-box title-shimmer"></div>
+              <div class="skeleton-box meta-shimmer"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State: No tasks at all -->
+        <div *ngIf="!isLoading() && tasks().length === 0" class="empty-state-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <h3>No tasks in your database</h3>
+          <p>Get started by creating your first task. It will be stored in your MySQL database via the .NET API.</p>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <span>+ Create First Task</span>
+          </button>
+        </div>
+
+        <!-- Empty State: Filtered out -->
+        <div *ngIf="!isLoading() && tasks().length > 0 && filteredTasks().length === 0" class="empty-state-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+          <h3>No matching tasks found</h3>
+          <p>Try adjusting your search terms or clearing current filter selections.</p>
+          <button class="btn btn-secondary" (click)="clearFilters()">
+            Clear All Filters
+          </button>
+        </div>
+
+        <!-- Tasks Cards List -->
+        <div *ngIf="!isLoading() && filteredTasks().length > 0" class="task-grid">
+          <article 
+            *ngFor="let task of filteredTasks()" 
+            class="task-card" 
+            [class.completed]="task.isCompleted"
+            [class.overdue]="isOverdue(task)"
+          >
+            <!-- Checkbox -->
+            <label class="task-checkbox-container" [title]="task.isCompleted ? 'Mark incomplete' : 'Mark complete'">
+              <input 
+                type="checkbox" 
+                [checked]="task.isCompleted" 
+                (change)="toggleTaskCompletion(task)"
+                class="sr-only-checkbox"
+              />
+              <span class="custom-checkbox">
+                <svg *ngIf="task.isCompleted" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </label>
+
+            <!-- Card Body Content -->
+            <div class="task-body">
+              <div class="task-headline">
+                <span class="task-title" [class.completed-title]="task.isCompleted">
+                  {{ task.title }}
+                </span>
+              </div>
+
+              <!-- Optional Description -->
+              <p *ngIf="task.description" class="task-desc">
+                {{ task.description }}
+              </p>
+
+              <!-- Meta Badges Row -->
+              <div class="task-meta">
+                <!-- Priority Badge -->
+                <span class="badge priority-badge priority-{{ (task.priority || 'Medium') | lowercase }}">
+                  <span class="dot"></span>
+                  {{ task.priority || 'Medium' }}
+                </span>
+
+                <!-- Category Badge -->
+                <span class="badge category-badge category-{{ (task.category || 'Other') | lowercase }}">
+                  {{ task.category || 'Other' }}
+                </span>
+
+                <!-- Due Date Badge -->
+                <span *ngIf="task.dueDate" class="badge due-badge" [class.badge-overdue]="isOverdue(task)" [class.badge-today]="isDueToday(task)">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                  </svg>
+                  <span *ngIf="isOverdue(task)">Overdue: {{ task.dueDate | date:'shortDate' }}</span>
+                  <span *ngIf="!isOverdue(task) && isDueToday(task)">Due Today</span>
+                  <span *ngIf="!isOverdue(task) && !isDueToday(task)">Due {{ task.dueDate | date:'mediumDate' }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="task-actions">
+              <button 
+                class="action-btn edit-btn" 
+                (click)="openEditModal(task)" 
+                title="Edit task"
+                aria-label="Edit task"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </button>
+
+              <button 
+                class="action-btn delete-btn" 
+                (click)="promptDeleteTask(task)" 
+                title="Delete task"
+                aria-label="Delete task"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modals & Feedback Elements -->
+  <app-task-form-modal
+    [isOpen]="isTaskModalOpen()"
+    [initialTask]="editingTask()"
+    [isSaving]="isSavingTask()"
+    [errorMessage]="taskModalError()"
+    (save)="onSaveTaskModal($event)"
+    (cancel)="isTaskModalOpen.set(false)"
+  ></app-task-form-modal>
+
+  <app-confirm-modal
+    [isOpen]="isDeleteModalOpen()"
+    title="Delete Task"
+    message="Are you sure you want to permanently delete this task? This cannot be undone."
+    [itemTitle]="deletingTaskItem()?.title || ''"
+    confirmText="Delete Task"
+    [isProcessing]="isDeletingTask()"
+    (confirm)="confirmDeleteTask()"
+    (cancel)="isDeleteModalOpen.set(false)"
+  ></app-confirm-modal>
+
+  <app-endpoint-modal
+    [isOpen]="isEndpointModalOpen()"
+    [currentUrl]="currentApiUrl()"
+    (close)="isEndpointModalOpen.set(false)"
+    (urlChanged)="onApiUrlChanged($event)"
+  ></app-endpoint-modal>
+
+  <app-toast
+    [toasts]="toasts()"
+    (dismiss)="dismissToast($event)"
+  ></app-toast>
 </div>
